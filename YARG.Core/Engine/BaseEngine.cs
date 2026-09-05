@@ -446,11 +446,11 @@ namespace YARG.Core.Engine
 
         protected virtual void UpdateMultiplier()
         {
-            BaseStats.ScoreMultiplier = Math.Min((BaseStats.Combo / 10) + 1, BaseParameters.MaxMultiplier);
+            BaseStats.ScoreMultiplier = Math.Min((BaseStats.Combo / BaseParameters.NotesPerMultiplierIncrease) + 1, BaseParameters.MaxMultiplier);
 
             if (BaseStats.IsStarPowerActive)
             {
-                BaseStats.ScoreMultiplier *= 2;
+                BaseStats.ScoreMultiplier *= BaseParameters.StarPowerMultiplier;
             }
 
             RebaseSustains(CurrentTick);
@@ -626,6 +626,12 @@ namespace YARG.Core.Engine
             BaseStats.Combo++;
             BaseStats.MaxCombo = Math.Max(BaseStats.MaxCombo, BaseStats.Combo);
             OnComboIncrement?.Invoke(BaseStats.BandComboUnits);
+
+            if (BaseParameters.StarPowerGeneratorStreakPercent > 0 && BaseStats.Combo % 10 == 0)
+            {
+                var gainTicks = (uint) (TicksPerFullSpBar * (BaseParameters.StarPowerGeneratorStreakPercent / 100.0));
+                GainStarPower(gainTicks);
+            }
         }
 
         protected void ResetCombo()

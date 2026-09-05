@@ -481,7 +481,8 @@ namespace YARG.Core.Engine.Drums
                 }
 
                 // Get the current multiplier given the current combo
-                multiplier = Math.Min((combo / 10) + 1, BaseParameters.MaxMultiplier);
+                // Use BaseMaxMultiplier (not MaxMultiplier) so the reference score doesn't scale with Multiplier Extender. Star thresholds must stay fixed regardless of active powers.
+                multiplier = Math.Min((combo / 10) + 1, BaseParameters.BaseMaxMultiplier);
                 double scoreForNote = GetPointsPerNote() * (1 + note.ChildNotes.Count);
                 baseScore += multiplier * scoreForNote;
                 noteScore += scoreForNote;

@@ -142,12 +142,12 @@ namespace YARG.Core.Game
                 };
             }
 
-            public GuitarEngineParameters Create(float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool isBass)
+            public GuitarEngineParameters Create(float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool isBass, int maxMultiplierBonus = 0, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0)
             {
                 var hitWindow = HitWindow.Create();
                 return new GuitarEngineParameters(
                     hitWindow,
-                    isBass ? BASS_MAX_MULTIPLIER : DEFAULT_MAX_MULTIPLIER,
+                    (isBass ? BASS_MAX_MULTIPLIER : DEFAULT_MAX_MULTIPLIER) + maxMultiplierBonus,
                     DEFAULT_WHAMMY_BUFFER,
                     SustainDropLeniency,
                     starMultiplierThresholds,
@@ -159,7 +159,12 @@ namespace YARG.Core.Game
                     AntiGhosting,
                     SoloTaps,
                     NoStarPowerOverlap,
-                    EnableLanes);
+                    EnableLanes,
+                    starPowerMultiplier,
+                    notesPerMultiplierIncrease,
+                    starPowerPhraseGainPercent,
+                    starPowerGeneratorStreakPercent,
+                    baseMaxMultiplier: isBass ? BASS_MAX_MULTIPLIER : DEFAULT_MAX_MULTIPLIER);
             }
         }
 
@@ -195,17 +200,22 @@ namespace YARG.Core.Game
                 };
             }
 
-            public DrumsEngineParameters Create(float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, DrumsEngineParameters.DrumMode mode)
+            public DrumsEngineParameters Create(float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, DrumsEngineParameters.DrumMode mode, int maxMultiplierBonus = 0, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0)
             {
                 var hitWindow = HitWindow.Create();
                 return new DrumsEngineParameters(
                     hitWindow,
-                    DEFAULT_MAX_MULTIPLIER,
+                    DEFAULT_MAX_MULTIPLIER + maxMultiplierBonus,
                     starMultiplierThresholds,
                     soloBonusStarMultiplierThresholds,
                     mode,
                     NoStarPowerOverlap,
-                    EnableLanes);
+                    EnableLanes,
+                    starPowerMultiplier,
+                    notesPerMultiplierIncrease,
+                    starPowerPhraseGainPercent,
+                    starPowerGeneratorStreakPercent,
+                    baseMaxMultiplier: DEFAULT_MAX_MULTIPLIER);
             }
         }
 
@@ -363,12 +373,12 @@ namespace YARG.Core.Game
                 };
             }
 
-            public KeysEngineParameters Create(float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool isBass)
+            public KeysEngineParameters Create(float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool isBass, int maxMultiplierBonus = 0, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0)
             {
                 var hitWindow = HitWindow.Create();
                 return new KeysEngineParameters(
                     hitWindow,
-                    isBass ? BASS_MAX_MULTIPLIER : DEFAULT_MAX_MULTIPLIER,
+                    (isBass ? BASS_MAX_MULTIPLIER : DEFAULT_MAX_MULTIPLIER) + maxMultiplierBonus,
                     DEFAULT_WHAMMY_BUFFER,
                     SustainDropLeniency,
                     starMultiplierThresholds,
@@ -376,7 +386,12 @@ namespace YARG.Core.Game
                     ChordStaggerWindow,
                     FatFingerWindow,
                     NoStarPowerOverlap,
-                    EnableLanes);
+                    EnableLanes,
+                    starPowerMultiplier,
+                    notesPerMultiplierIncrease,
+                    starPowerPhraseGainPercent,
+                    starPowerGeneratorStreakPercent,
+                    baseMaxMultiplier: isBass ? BASS_MAX_MULTIPLIER : DEFAULT_MAX_MULTIPLIER);
             }
         }
     }

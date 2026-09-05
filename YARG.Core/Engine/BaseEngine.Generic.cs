@@ -1157,7 +1157,8 @@ namespace YARG.Core.Engine
 
         protected void AwardStarPower(TNoteType note)
         {
-            GainStarPower(TicksPerQuarterSpBar);
+            var gainTicks = (uint) (TicksPerFullSpBar * (BaseParameters.StarPowerPhraseGainPercent / 100.0));
+            GainStarPower(gainTicks);
 
             OnStarPowerPhraseHit?.Invoke(note);
         }
