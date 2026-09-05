@@ -89,19 +89,21 @@ namespace YARG.Core.Engine
 
         public static int[] GetStarScoreCutoffs(List<int[]> starScoreCutoffsList)
         {
+            int thresholdCount = starScoreCutoffsList.Count > 0 ? starScoreCutoffsList[0].Length : NUMBER_OF_STAR_SCORE_THRESHOLDS;
+
 #if UNITY_EDITOR || YARG_TEST_BUILD || YARG_NIGHTLY_BUILD
             foreach (var playerCutoffsList in starScoreCutoffsList)
             {
                 YargLogger.AssertFormat(
-                    playerCutoffsList.Length == NUMBER_OF_STAR_SCORE_THRESHOLDS,
+                    playerCutoffsList.Length == thresholdCount,
                     "Expected player star score cutoffs to contain {0} thresholds, got {1}.",
-                    NUMBER_OF_STAR_SCORE_THRESHOLDS,
+                    thresholdCount,
                     playerCutoffsList.Length);
             }
 #endif
 
-            int[] bandStarScoreCutoffs = new int[NUMBER_OF_STAR_SCORE_THRESHOLDS];
-            for (int i = 0; i < NUMBER_OF_STAR_SCORE_THRESHOLDS; i++)
+            int[] bandStarScoreCutoffs = new int[thresholdCount];
+            for (int i = 0; i < thresholdCount; i++)
             {
                 int totalStarCutoff = 0;
                 foreach (var playerCutoffsList in starScoreCutoffsList)
