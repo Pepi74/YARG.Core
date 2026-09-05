@@ -12,6 +12,13 @@ namespace YARG.Core.Engine
 
         public readonly int MaxMultiplier;
 
+        /// <summary>
+        /// The instrument's max multiplier WITHOUT any power-based bonus (e.g. Multiplier Extender).
+        /// Used when calculating the reference "perfect FC" score so that star thresholds stay a fixed
+        /// bar regardless of active powers.
+        /// </summary>
+        public readonly int BaseMaxMultiplier;
+
         public readonly double StarPowerWhammyBuffer;
 
         public readonly double SustainDropLeniency;
@@ -22,18 +29,31 @@ namespace YARG.Core.Engine
 
         public readonly bool EnableLanes;
 
+        public readonly int StarPowerMultiplier;
+
+        public readonly int NotesPerMultiplierIncrease;
+
+        public readonly int StarPowerPhraseGainPercent;
+
+        public readonly int StarPowerGeneratorStreakPercent;
+
         public double SongSpeed;
 
         protected BaseEngineParameters(HitWindowSettings hitWindow, int maxMultiplier, double spWhammyBuffer,
-            double sustainDropLeniency, float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool enableLanes)
+            double sustainDropLeniency, float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool enableLanes, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int? baseMaxMultiplier = null)
         {
             HitWindow = hitWindow;
             StarPowerWhammyBuffer = spWhammyBuffer;
             SustainDropLeniency = sustainDropLeniency;
             MaxMultiplier = maxMultiplier;
+            BaseMaxMultiplier = baseMaxMultiplier ?? maxMultiplier;
             StarMultiplierThresholds = starMultiplierThresholds;
             SoloBonusStarMultiplierThresholds = soloBonusStarMultiplierThresholds;
             EnableLanes = enableLanes;
+            StarPowerMultiplier = starPowerMultiplier;
+            NotesPerMultiplierIncrease = notesPerMultiplierIncrease;
+            StarPowerPhraseGainPercent = starPowerPhraseGainPercent;
+            StarPowerGeneratorStreakPercent = starPowerGeneratorStreakPercent;
         }
 
         protected BaseEngineParameters(ref FixedArrayStream stream, int version)
@@ -78,6 +98,13 @@ namespace YARG.Core.Engine
             {
                 EnableLanes = stream.ReadBoolean();
             }
+
+            // Intentionally not deserialized yet. A replay recorded with powers active will simply fall back to default values on playback.
+            StarPowerMultiplier = 2;
+            NotesPerMultiplierIncrease = 10;
+            StarPowerPhraseGainPercent = 25;
+            StarPowerGeneratorStreakPercent = 0;
+            BaseMaxMultiplier = MaxMultiplier;
         }
 
         public virtual void Serialize(BinaryWriter writer)
