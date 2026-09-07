@@ -446,12 +446,17 @@ namespace YARG.Core.Engine
 
         protected virtual void UpdateMultiplier()
         {
-            BaseStats.ScoreMultiplier = Math.Min((BaseStats.Combo / BaseParameters.NotesPerMultiplierIncrease) + 1, BaseParameters.MaxMultiplier);
+            BaseStats.ScoreMultiplier = Math.Min((BaseStats.Combo / BaseParameters.NotesPerMultiplierIncrease) + BaseParameters.BaseMultiplierOffset, BaseParameters.MaxMultiplier);
 
             if (BaseStats.IsStarPowerActive)
             {
                 BaseStats.ScoreMultiplier *= BaseParameters.StarPowerMultiplier;
             }
+
+            // Speed Freak: keep the effective (Star-Power-scaled) bonus-star threshold in sync here, so IncrementNotesHit can do a cheap comparison without needing to see the engine parameters.
+            BaseStats.SpeedFreakBonusEffectiveThreshold = BaseParameters.SpeedFreakBonusThreshold > 0 && BaseStats.IsStarPowerActive
+                ? BaseParameters.SpeedFreakBonusThreshold * BaseParameters.StarPowerMultiplier
+                : BaseParameters.SpeedFreakBonusThreshold;
 
             RebaseSustains(CurrentTick);
         }
