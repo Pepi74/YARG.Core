@@ -72,7 +72,8 @@ namespace YARG.Core.Engine
             EngineStats = new TEngineStats();
             Reset();
 
-            EngineStats.ScoreMultiplier = 1;
+            // Speed Freak can start the multiplier above 1x. Set it directly here instead of calling UpdateMultiplier(), which also handles sustain rebasing. Meaningless before any notes have been hit.
+            EngineStats.ScoreMultiplier = engineParameters.BaseMultiplierOffset;
 
             TicksPerSustainPoint = SyncTrack.Resolution / (double) POINTS_PER_BEAT;
             SustainBurstThreshold = SyncTrack.Resolution / SUSTAIN_BURST_FRACTION;
@@ -175,6 +176,8 @@ namespace YARG.Core.Engine
             EngineStats.MaxSoloBonusPoints = CalculateTotalSoloBonus();
 
             StarScoreThresholds = PopulateStarScoreThresholds(EngineParameters.StarMultiplierThresholds, EngineParameters.SoloBonusStarMultiplierThresholds, BaseScore, EngineStats.MaxSoloBonusPoints);
+
+            EngineStats.SpeedFreakBonusEffectiveThreshold = EngineParameters.SpeedFreakBonusThreshold;
         }
 
         public static int[] PopulateStarScoreThresholds(float[] multiplierThresholds, float[] soloBonusMultiplierThresholds, int baseScore, int soloScore)
@@ -1158,7 +1161,7 @@ namespace YARG.Core.Engine
                 progress = YargMath.InverseLerpF(previousPoints, nextPoints, EngineStats.TotalScore);
             }
 
-            EngineStats.Stars = CurrentStarIndex + progress;
+            EngineStats.Stars = CurrentStarIndex + progress + EngineStats.SpeedFreakBonusStars;
         }
 
         protected virtual void StripStarPower(TNoteType? note)

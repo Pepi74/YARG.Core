@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using YARG.Core.Chart;
 using YARG.Core.Extensions;
@@ -103,6 +104,56 @@ namespace YARG.Core.Engine
         /// Number of notes in the chart. This value should never be modified.
         /// </summary>
         public int TotalNotes;
+
+        /// <summary>
+        /// The current Speed Freak bonus-star threshold, already scaled for Star Power (0 if the power isn't active). Kept up to date by <see cref="BaseEngine.UpdateMultiplier"/>.
+        /// </summary>
+        public int SpeedFreakBonusEffectiveThreshold;
+
+        /// <summary>
+        /// Raw count of notes hit while sustaining Speed Freak's threshold. Never resets on dropping below it. Purely cumulative for the whole song.
+        /// </summary>
+        public int SpeedFreakBonusNotesHit;
+
+        // Tunable: fraction of the chart's total notes that need to be hit at/above the threshold to earn all 5 bonus stars.
+        private const float SPEED_FREAK_BONUS_NOTE_PERCENTAGE = 0.7f;
+
+        /// <summary>
+        /// Bonus stars (0-5) earned from Speed Freak. Entirely separate from the score-based star curve. These are added on top, not derived from <see cref="StarMultiplierThresholds"/>.
+        /// </summary>
+        public int SpeedFreakBonusStars
+        {
+            get
+            {
+                int notesRequired = (int) (TotalNotes * SPEED_FREAK_BONUS_NOTE_PERCENTAGE);
+                if (notesRequired <= 0)
+                {
+                    return 0;
+                }
+
+                int notesPerStar = Math.Max(1, notesRequired / 5);
+                return Math.Min(5, SpeedFreakBonusNotesHit / notesPerStar);
+            }
+        }
+
+        /// <summary>
+        /// Progress (0-1) toward the next Speed Freak bonus star. Resets each time a star is earned. 0 once all 5 are earned.
+        /// </summary>
+        public float SpeedFreakBonusProgress
+        {
+            get
+            {
+                int notesRequired = (int) (TotalNotes * SPEED_FREAK_BONUS_NOTE_PERCENTAGE);
+                if (notesRequired <= 0 || SpeedFreakBonusStars >= 5)
+                {
+                    return 0f;
+                }
+
+                int notesPerStar = Math.Max(1, notesRequired / 5);
+                int notesIntoCurrentStar = SpeedFreakBonusNotesHit % notesPerStar;
+                return (float) notesIntoCurrentStar / notesPerStar;
+            }
+        }
 
         /// <summary>
         /// Number of chords in the chart. Defaults to total notes, but some instruments calculate differently.
@@ -248,6 +299,8 @@ namespace YARG.Core.Engine
             LanedNotesHit = stats.LanedNotesHit;
             TotalNotes = stats.TotalNotes;
             TotalChords = stats.TotalChords;
+            SpeedFreakBonusEffectiveThreshold = stats.SpeedFreakBonusEffectiveThreshold;
+            SpeedFreakBonusNotesHit = stats.SpeedFreakBonusNotesHit;
 
             TotalOffset = stats.TotalOffset;
             AverageOffset = stats.AverageOffset;
@@ -341,6 +394,8 @@ namespace YARG.Core.Engine
             AverageMultiplier = 0;
             // Don't reset TotalNotes
             // TotalNotes = 0;
+            SpeedFreakBonusEffectiveThreshold = 0;
+            SpeedFreakBonusNotesHit = 0;
 
             StarPowerTickAmount = 0;
             TotalStarPowerTicks = 0;
@@ -419,6 +474,12 @@ namespace YARG.Core.Engine
         public void IncrementNotesHit<NoteType>(NoteType note, double current_time) where NoteType : Note<NoteType>
         {
             NotesHit++;
+
+            // Speed Freak: this hit counts toward the bonus if the multiplier was already sustaining the power's threshold (0 = power not active for this player, so this never counts).
+            if (SpeedFreakBonusEffectiveThreshold > 0 && ScoreMultiplier >= SpeedFreakBonusEffectiveThreshold)
+            {
+                SpeedFreakBonusNotesHit++;
+            }
 
             if (!note.IsAnyLane)
             {
