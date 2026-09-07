@@ -111,12 +111,18 @@ namespace YARG.Core.Engine
         public int SpeedFreakBonusEffectiveThreshold;
 
         /// <summary>
-        /// Raw count of notes hit while sustaining Speed Freak's threshold. Never resets on dropping below it. Purely cumulative for the whole song.
+        /// Total song length in seconds (same value shown on the score HUD), set once.
         /// </summary>
-        public int SpeedFreakBonusNotesHit;
+        public double SpeedFreakBonusSongLength;
 
-        // Tunable: fraction of the chart's total notes that need to be hit at/above the threshold to earn all 5 bonus stars.
-        private const float SPEED_FREAK_BONUS_NOTE_PERCENTAGE = 0.7f;
+        /// <summary>
+        /// Cumulative real time (seconds) spent with the score multiplier at or above Speed Freak's threshold. Never resets on dropping below it.
+        /// </summary>
+        public double SpeedFreakBonusTimeAtThreshold;
+
+        // Tunable: fraction of the chart's total duration that needs to be spent at/above the threshold to earn all 5 bonus stars.
+        private const float SPEED_FREAK_BONUS_TIME_PERCENTAGE = 0.7f;
+
 
         /// <summary>
         /// Bonus stars (0-5) earned from Speed Freak. Entirely separate from the score-based star curve. These are added on top, not derived from <see cref="StarMultiplierThresholds"/>.
@@ -125,14 +131,14 @@ namespace YARG.Core.Engine
         {
             get
             {
-                int notesRequired = (int) (TotalNotes * SPEED_FREAK_BONUS_NOTE_PERCENTAGE);
-                if (notesRequired <= 0)
+                double timeRequired = SpeedFreakBonusSongLength * SPEED_FREAK_BONUS_TIME_PERCENTAGE;
+                if (timeRequired <= 0)
                 {
                     return 0;
                 }
 
-                int notesPerStar = Math.Max(1, notesRequired / 5);
-                return Math.Min(5, SpeedFreakBonusNotesHit / notesPerStar);
+                double timePerStar = timeRequired / 5;
+                return Math.Min(5, (int) (SpeedFreakBonusTimeAtThreshold / timePerStar));
             }
         }
 
@@ -143,15 +149,15 @@ namespace YARG.Core.Engine
         {
             get
             {
-                int notesRequired = (int) (TotalNotes * SPEED_FREAK_BONUS_NOTE_PERCENTAGE);
-                if (notesRequired <= 0 || SpeedFreakBonusStars >= 5)
+                double timeRequired = SpeedFreakBonusSongLength * SPEED_FREAK_BONUS_TIME_PERCENTAGE;
+                if (timeRequired <= 0 || SpeedFreakBonusStars >= 5)
                 {
                     return 0f;
                 }
 
-                int notesPerStar = Math.Max(1, notesRequired / 5);
-                int notesIntoCurrentStar = SpeedFreakBonusNotesHit % notesPerStar;
-                return (float) notesIntoCurrentStar / notesPerStar;
+                double timePerStar = timeRequired / 5;
+                double timeIntoCurrentStar = SpeedFreakBonusTimeAtThreshold % timePerStar;
+                return (float) (timeIntoCurrentStar / timePerStar);
             }
         }
 
@@ -300,7 +306,8 @@ namespace YARG.Core.Engine
             TotalNotes = stats.TotalNotes;
             TotalChords = stats.TotalChords;
             SpeedFreakBonusEffectiveThreshold = stats.SpeedFreakBonusEffectiveThreshold;
-            SpeedFreakBonusNotesHit = stats.SpeedFreakBonusNotesHit;
+            SpeedFreakBonusSongLength = stats.SpeedFreakBonusSongLength;
+            SpeedFreakBonusTimeAtThreshold = stats.SpeedFreakBonusTimeAtThreshold;
 
             TotalOffset = stats.TotalOffset;
             AverageOffset = stats.AverageOffset;
@@ -395,7 +402,7 @@ namespace YARG.Core.Engine
             // Don't reset TotalNotes
             // TotalNotes = 0;
             SpeedFreakBonusEffectiveThreshold = 0;
-            SpeedFreakBonusNotesHit = 0;
+            SpeedFreakBonusTimeAtThreshold = 0;
 
             StarPowerTickAmount = 0;
             TotalStarPowerTicks = 0;
@@ -474,12 +481,6 @@ namespace YARG.Core.Engine
         public void IncrementNotesHit<NoteType>(NoteType note, double current_time) where NoteType : Note<NoteType>
         {
             NotesHit++;
-
-            // Speed Freak: this hit counts toward the bonus if the multiplier was already sustaining the power's threshold (0 = power not active for this player, so this never counts).
-            if (SpeedFreakBonusEffectiveThreshold > 0 && ScoreMultiplier >= SpeedFreakBonusEffectiveThreshold)
-            {
-                SpeedFreakBonusNotesHit++;
-            }
 
             if (!note.IsAnyLane)
             {
