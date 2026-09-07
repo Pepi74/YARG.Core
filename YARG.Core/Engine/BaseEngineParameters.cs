@@ -36,11 +36,13 @@ namespace YARG.Core.Engine
         public readonly int StarPowerPhraseGainPercent;
 
         public readonly int StarPowerGeneratorStreakPercent;
+        public readonly int BaseMultiplierOffset;
+        public readonly int SpeedFreakBonusThreshold;
 
         public double SongSpeed;
 
         protected BaseEngineParameters(HitWindowSettings hitWindow, int maxMultiplier, double spWhammyBuffer,
-            double sustainDropLeniency, float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool enableLanes, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int? baseMaxMultiplier = null)
+            double sustainDropLeniency, float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool enableLanes, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int? baseMaxMultiplier = null, int baseMultiplierOffset = 1, int speedFreakBonusThreshold = 0)
         {
             HitWindow = hitWindow;
             StarPowerWhammyBuffer = spWhammyBuffer;
@@ -54,6 +56,8 @@ namespace YARG.Core.Engine
             NotesPerMultiplierIncrease = notesPerMultiplierIncrease;
             StarPowerPhraseGainPercent = starPowerPhraseGainPercent;
             StarPowerGeneratorStreakPercent = starPowerGeneratorStreakPercent;
+            BaseMultiplierOffset = baseMultiplierOffset;
+            SpeedFreakBonusThreshold = speedFreakBonusThreshold;
         }
 
         protected BaseEngineParameters(ref FixedArrayStream stream, int version)
@@ -104,6 +108,8 @@ namespace YARG.Core.Engine
             NotesPerMultiplierIncrease = 10;
             StarPowerPhraseGainPercent = 25;
             StarPowerGeneratorStreakPercent = 0;
+            BaseMultiplierOffset = 1;
+            SpeedFreakBonusThreshold = 0;
             BaseMaxMultiplier = MaxMultiplier;
         }
 
