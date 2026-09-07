@@ -118,6 +118,7 @@ namespace YARG.Core.Engine
             StarScoreThresholds = PopulateStarScoreThresholds(engineParameters.StarMultiplierThresholds, engineParameters.SoloBonusStarMultiplierThresholds, BaseScore, EngineStats.MaxSoloBonusPoints);
 
             EngineStats.SpeedFreakBonusEffectiveThreshold = engineParameters.SpeedFreakBonusThreshold;
+            EngineStats.SpeedFreakBonusSongLength = engineParameters.SpeedFreakBonusSongLength;
         }
 
         public static int[] PopulateStarScoreThresholds(float[] multiplierThresholds, float[] soloBonusMultiplierThresholds, int baseScore, int soloScore)
@@ -372,6 +373,14 @@ namespace YARG.Core.Engine
 
             LastUpdateTime = CurrentTime;
             LastTick = CurrentTick;
+
+            // Speed Freak: accumulate real time while the multiplier is at or above the bonus threshold.
+            if (LastUpdateTime > double.MinValue &&
+                EngineStats.SpeedFreakBonusEffectiveThreshold > 0 &&
+                EngineStats.ScoreMultiplier >= EngineStats.SpeedFreakBonusEffectiveThreshold)
+            {
+                EngineStats.SpeedFreakBonusTimeAtThreshold += time - LastUpdateTime;
+            }
 
             CurrentTime = time;
             CurrentTick = GetCurrentTick(time);

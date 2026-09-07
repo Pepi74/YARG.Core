@@ -453,7 +453,7 @@ namespace YARG.Core.Engine
                 BaseStats.ScoreMultiplier *= BaseParameters.StarPowerMultiplier;
             }
 
-            // Speed Freak: keep the effective (Star-Power-scaled) bonus-star threshold in sync here, so IncrementNotesHit can do a cheap comparison without needing to see the engine parameters.
+            // Speed Freak: keep the effective (Star-Power-scaled) bonus-star threshold in sync here, so UpdateTimeVariables can do a cheap comparison without needing to see the engine parameters.
             BaseStats.SpeedFreakBonusEffectiveThreshold = BaseParameters.SpeedFreakBonusThreshold > 0 && BaseStats.IsStarPowerActive
                 ? BaseParameters.SpeedFreakBonusThreshold * BaseParameters.StarPowerMultiplier
                 : BaseParameters.SpeedFreakBonusThreshold;
