@@ -29,8 +29,8 @@ namespace YARG.Core.Engine.Drums
         public readonly bool NoStarPowerOverlap;
 
         public DrumsEngineParameters(HitWindowSettings hitWindow, int maxMultiplier, float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds,
-            DrumMode mode, bool noStarPowerOverlap, bool enableLanes, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int? baseMaxMultiplier = null, int baseMultiplierOffset = 1, int speedFreakBonusThreshold = 0, double speedFreakBonusSongLength = 0)
-            : base(hitWindow, maxMultiplier, 0, 0, starMultiplierThresholds, soloBonusStarMultiplierThresholds, enableLanes, starPowerMultiplier, notesPerMultiplierIncrease, starPowerPhraseGainPercent, starPowerGeneratorStreakPercent, baseMaxMultiplier, baseMultiplierOffset, speedFreakBonusThreshold, speedFreakBonusSongLength)
+            DrumMode mode, bool noStarPowerOverlap, bool enableLanes, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int? baseMaxMultiplier = null, int baseMultiplierOffset = 1, int speedFreakBonusThreshold = 0, double speedFreakBonusSongLength = 0, int streakGuardianMaxShields = 0)
+            : base(hitWindow, maxMultiplier, 0, 0, starMultiplierThresholds, soloBonusStarMultiplierThresholds, enableLanes, starPowerMultiplier, notesPerMultiplierIncrease, starPowerPhraseGainPercent, starPowerGeneratorStreakPercent, baseMaxMultiplier, baseMultiplierOffset, speedFreakBonusThreshold, speedFreakBonusSongLength, streakGuardianMaxShields)
         {
             Mode = mode;
             VelocityThreshold = 0.35f;
