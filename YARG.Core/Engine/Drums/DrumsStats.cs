@@ -42,6 +42,7 @@ namespace YARG.Core.Engine.Drums
         /// Amount of points earned from hitting notes with correct dynamics.
         /// </summary>
         public int DynamicsBonus;
+        public override bool IsFullCombo => base.IsFullCombo && Overhits == 0;
 
         public DrumsStats()
         {

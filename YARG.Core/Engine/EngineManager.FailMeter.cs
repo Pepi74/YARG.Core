@@ -369,12 +369,22 @@ namespace YARG.Core.Engine
                     return;
                 }
 
+                if (Engine.WasLastMissShielded)
+                {
+                    return;
+                }
+
                 float delta = -1 * HAPPINESS_PER_NOTE_MISS * RockMeterPreset.MissDamageMultiplier;
                 AddHappiness(delta);
             }
 
             private void OnOverstrum()
             {
+                if (Engine.WasLastMissShielded)
+                {
+                    return;
+                }
+                
                 float delta = -1 * HAPPINESS_PER_NOTE_MISS * RockMeterPreset.OverhitDamageMultiplier;
                 AddHappiness(delta);
             }

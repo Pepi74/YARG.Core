@@ -69,6 +69,12 @@ namespace YARG.Core.Engine
 
             StarPowerWhammyTimer = new EngineTimer("Star Power Whammy", engineParameters.StarPowerWhammyBuffer);
 
+            StreakGuardianShieldRechargeTimers = new EngineTimer[engineParameters.StreakGuardianMaxShields];
+            for (int i = 0; i < StreakGuardianShieldRechargeTimers.Length; i++)
+            {
+                StreakGuardianShieldRechargeTimers[i] = new EngineTimer("Streak Guardian Shield Recharge", STREAK_GUARDIAN_SHIELD_COOLDOWN_SECONDS);
+            }
+
             EngineStats = new TEngineStats();
             Reset();
 
@@ -179,6 +185,9 @@ namespace YARG.Core.Engine
 
             EngineStats.SpeedFreakBonusEffectiveThreshold = EngineParameters.SpeedFreakBonusThreshold;
             EngineStats.SpeedFreakBonusSongLength = EngineParameters.SpeedFreakBonusSongLength;
+
+            EngineStats.StreakGuardianMaxShields = EngineParameters.StreakGuardianMaxShields;
+            EngineStats.StreakGuardianShields = EngineParameters.StreakGuardianMaxShields;
         }
 
         public static int[] PopulateStarScoreThresholds(float[] multiplierThresholds, float[] soloBonusMultiplierThresholds, int baseScore, int soloScore)
@@ -440,6 +449,17 @@ namespace YARG.Core.Engine
                 EngineStats.ScoreMultiplier >= EngineStats.SpeedFreakBonusEffectiveThreshold)
             {
                 EngineStats.SpeedFreakBonusTimeAtThreshold += time - LastUpdateTime;
+            }
+
+            // Streak Guardian: recharge any shield whose cooldown has elapsed.
+            for (int i = 0; i < StreakGuardianShieldRechargeTimers.Length; i++)
+            {
+                ref var timer = ref StreakGuardianShieldRechargeTimers[i];
+                if (timer.IsActive && timer.IsExpired(time))
+                {
+                    timer.Disable(time);
+                    EngineStats.StreakGuardianShields = Math.Min(EngineStats.StreakGuardianMaxShields, EngineStats.StreakGuardianShields + 1);
+                }
             }
 
             CurrentTime = time;
@@ -1170,7 +1190,7 @@ namespace YARG.Core.Engine
                 progress = YargMath.InverseLerpF(previousPoints, nextPoints, EngineStats.TotalScore);
             }
 
-            EngineStats.Stars = CurrentStarIndex + progress + EngineStats.SpeedFreakBonusStars;
+            EngineStats.Stars = CurrentStarIndex + progress + EngineStats.SpeedFreakBonusStars + EngineStats.StreakGuardianBonusStars;
         }
 
         protected virtual void StripStarPower(TNoteType? note)

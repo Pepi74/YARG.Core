@@ -219,7 +219,7 @@ namespace YARG.Core.Engine.Keys
             // If no notes within a chord were hit, combo is 0
             if (note.ParentOrSelf.WasFullyMissed())
             {
-                ResetCombo();
+                ResetComboOrConsumeShield();
             }
             else
             {
