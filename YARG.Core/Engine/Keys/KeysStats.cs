@@ -17,7 +17,7 @@ namespace YARG.Core.Engine.Keys
         /// </summary>
         public int FatFingersIgnored;
 
-        public override bool IsFullCombo => MaxCombo == TotalChords;
+        public override bool IsFullCombo => MaxCombo == TotalChords && Overhits == 0;
 
         public KeysStats()
         {

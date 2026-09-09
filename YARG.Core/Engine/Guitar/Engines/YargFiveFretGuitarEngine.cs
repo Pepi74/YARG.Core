@@ -294,7 +294,7 @@ namespace YARG.Core.Engine.Guitar.Engines
                 // Handles hitting a hopo notes
                 // If first note is a hopo then it can be hit without combo (for practice mode)
                 bool hopoCondition = note.IsHopo && isFirstNoteInWindow &&
-                    (EngineStats.Combo > 0 || NoteIndex == 0);
+                    (EngineStats.Combo > 0 || NoteIndex == 0) && EngineStats.CanHopo;
 
                 // If a note is a tap then it can be hit only if it is the closest note, unless
                 // the combo is 0 then it can be hit regardless of the distance (note skipping)

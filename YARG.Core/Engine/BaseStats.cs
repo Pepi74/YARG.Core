@@ -162,6 +162,54 @@ namespace YARG.Core.Engine
         }
 
         /// <summary>
+        /// Maximum number of Streak Guardian shields this player can hold. 0 if the power isn't active; otherwise set once at song start and never changes.
+        /// </summary>
+        public int StreakGuardianMaxShields;
+
+        /// <summary>
+        /// Number of Streak Guardian shields currently charged and available to consume, from 0 up to <see cref="StreakGuardianMaxShields"/>.
+        /// </summary>
+        public int StreakGuardianShields;
+
+        /// <summary>
+        /// Notes hit, uninterrupted, toward the Streak Guardian bonus-star tier currently being pursued. Resets to 0 only on a real (unshielded) combo break, or when the current tier is completed.
+        /// </summary>
+        public int StreakGuardianTierProgress;
+
+        /// <summary>
+        /// Index (0-5) of the Streak Guardian bonus-star tier currently being pursued. Doubles as the count of bonus stars already banked; 5 means all of them have been earned.
+        /// </summary>
+        public int StreakGuardianTierIndex;
+
+        // Tunable: each tier's required streak length is TotalNotes/10, scaled by one of these fractions, in order (stars 1-5).
+        private static readonly float[] STREAK_GUARDIAN_TIER_FRACTIONS = { 0.8f, 0.9f, 1.0f, 1.1f, 1.2f };
+
+        /// <summary>
+        /// Number of consecutive notes required to earn the Streak Guardian bonus star currently being pursued. 0 once all 5 have been earned.
+        /// </summary>
+        public int StreakGuardianTierThreshold =>
+            StreakGuardianTierIndex >= STREAK_GUARDIAN_TIER_FRACTIONS.Length
+                ? 0
+                : Math.Max(1, (int) Math.Round(TotalNotes / 10f * STREAK_GUARDIAN_TIER_FRACTIONS[StreakGuardianTierIndex]));
+
+        /// <summary>
+        /// Bonus stars (0-5) earned from Streak Guardian. Entirely separate from the score-based star curve. These are added on top, not derived from StarMultiplierThresholds, same as <see cref="SpeedFreakBonusStars"/>.
+        /// </summary>
+        public int StreakGuardianBonusStars => Math.Min(STREAK_GUARDIAN_TIER_FRACTIONS.Length, StreakGuardianTierIndex);
+
+        /// <summary>
+        /// Progress (0-1) toward the next Streak Guardian bonus star. Resets each time a star is earned. 0 once all 5 are earned.
+        /// </summary>
+        public float StreakGuardianTierProgressFraction
+        {
+            get
+            {
+                int threshold = StreakGuardianTierThreshold;
+                return threshold <= 0 ? 0f : (float) StreakGuardianTierProgress / threshold;
+            }
+        }
+
+        /// <summary>
         /// Number of chords in the chart. Defaults to total notes, but some instruments calculate differently.
         /// </summary>
         public int TotalChords;
@@ -305,9 +353,15 @@ namespace YARG.Core.Engine
             LanedNotesHit = stats.LanedNotesHit;
             TotalNotes = stats.TotalNotes;
             TotalChords = stats.TotalChords;
+
             SpeedFreakBonusEffectiveThreshold = stats.SpeedFreakBonusEffectiveThreshold;
             SpeedFreakBonusSongLength = stats.SpeedFreakBonusSongLength;
             SpeedFreakBonusTimeAtThreshold = stats.SpeedFreakBonusTimeAtThreshold;
+
+            StreakGuardianMaxShields = stats.StreakGuardianMaxShields;
+            StreakGuardianShields = stats.StreakGuardianShields;
+            StreakGuardianTierProgress = stats.StreakGuardianTierProgress;
+            StreakGuardianTierIndex = stats.StreakGuardianTierIndex;
 
             TotalOffset = stats.TotalOffset;
             AverageOffset = stats.AverageOffset;
@@ -403,6 +457,10 @@ namespace YARG.Core.Engine
             // TotalNotes = 0;
             SpeedFreakBonusEffectiveThreshold = 0;
             SpeedFreakBonusTimeAtThreshold = 0;
+
+            StreakGuardianShields = StreakGuardianMaxShields;
+            StreakGuardianTierProgress = 0;
+            StreakGuardianTierIndex = 0;
 
             StarPowerTickAmount = 0;
             TotalStarPowerTicks = 0;

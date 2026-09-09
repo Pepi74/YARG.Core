@@ -157,29 +157,35 @@ namespace YARG.Core.Engine.Keys
 
             YargLogger.LogFormatTrace("Overhit at {0}", CurrentTime);
 
-            // Break all active sustains
-            for (int i = 0; i < ActiveSustains.Count; i++)
-            {
-                var sustain = ActiveSustains[i];
-                ActiveSustains.RemoveAt(i);
-                YargLogger.LogFormatTrace("Ended sustain (end time: {0}) at {1}", sustain.GetEndTime(SyncTrack, 0), CurrentTime);
-                i--;
+            bool willBeShielded = BaseStats.StreakGuardianShields > 0;
 
-                double finalScore = CalculateSustainPoints(ref sustain, CurrentTick);
-                EngineStats.CommittedScore += (int) Math.Ceiling(finalScore);
-                OnSustainEnd?.Invoke(sustain.Note, CurrentTime, sustain.HasFinishedScoring);
-            }
-
-            if (NoteIndex < Notes.Count)
+            if (!willBeShielded)
             {
-                // Don't remove the phrase if the current note being overstrummed is the start of a phrase
-                if (!Notes[NoteIndex].IsStarPowerStart)
+                // Break all active sustains
+                for (int i = 0; i < ActiveSustains.Count; i++)
                 {
-                    StripStarPower(Notes[NoteIndex]);
+                    var sustain = ActiveSustains[i];
+                    ActiveSustains.RemoveAt(i);
+                    YargLogger.LogFormatTrace("Ended sustain (end time: {0}) at {1}", sustain.GetEndTime(SyncTrack, 0), CurrentTime);
+                    i--;
+
+                    double finalScore = CalculateSustainPoints(ref sustain, CurrentTick);
+                    EngineStats.CommittedScore += (int) Math.Ceiling(finalScore);
+                    OnSustainEnd?.Invoke(sustain.Note, CurrentTime, sustain.HasFinishedScoring);
                 }
+
+                if (NoteIndex < Notes.Count)
+                {
+                    // Don't remove the phrase if the current note being overstrummed is the start of a phrase
+                    if (!Notes[NoteIndex].IsStarPowerStart)
+                    {
+                        StripStarPower(Notes[NoteIndex]);
+                    }
+                }                
             }
 
-            ResetCombo();
+
+            ResetComboOrConsumeShield();
             EngineStats.Overhits++;
 
             UpdateMultiplier();

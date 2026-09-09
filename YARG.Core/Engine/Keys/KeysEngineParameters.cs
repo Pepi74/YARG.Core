@@ -14,8 +14,8 @@ namespace YARG.Core.Engine.Keys
 
         public KeysEngineParameters(HitWindowSettings hitWindow, int maxMultiplier, double spWhammyBuffer,
             double sustainDropLeniency, float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, double chordStaggerWindow, double fatFingerWindow,
-            bool noStarPowerOverlap, bool enableLanes, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int? baseMaxMultiplier = null, int baseMultiplierOffset = 1, int speedFreakBonusThreshold = 0, double speedFreakBonusSongLength = 0)
-            : base(hitWindow, maxMultiplier, spWhammyBuffer, sustainDropLeniency, starMultiplierThresholds, soloBonusStarMultiplierThresholds, enableLanes, starPowerMultiplier, notesPerMultiplierIncrease,  starPowerPhraseGainPercent, starPowerGeneratorStreakPercent, baseMaxMultiplier, baseMultiplierOffset, speedFreakBonusThreshold, speedFreakBonusSongLength)
+            bool noStarPowerOverlap, bool enableLanes, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int? baseMaxMultiplier = null, int baseMultiplierOffset = 1, int speedFreakBonusThreshold = 0, double speedFreakBonusSongLength = 0, int streakGuardianMaxShields = 0)
+            : base(hitWindow, maxMultiplier, spWhammyBuffer, sustainDropLeniency, starMultiplierThresholds, soloBonusStarMultiplierThresholds, enableLanes, starPowerMultiplier, notesPerMultiplierIncrease,  starPowerPhraseGainPercent, starPowerGeneratorStreakPercent, baseMaxMultiplier, baseMultiplierOffset, speedFreakBonusThreshold, speedFreakBonusSongLength, streakGuardianMaxShields)
         {
             ChordStaggerWindow = chordStaggerWindow;
             FatFingerWindow = fatFingerWindow;

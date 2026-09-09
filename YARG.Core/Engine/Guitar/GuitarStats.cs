@@ -22,6 +22,12 @@ namespace YARG.Core.Engine.Guitar
         /// </summary>
         public int GhostInputs;
 
+        /// <summary>
+        /// True if the player is currently allowed to hammer-on/pull-off without strumming. Normally mirrors <see cref="BaseStats.Combo"/> being non-zero, but Streak Guardian can decouple the two: a shield-saved miss clears this even though Combo is preserved, while a shield-saved overstrum leaves it untouched.
+        /// </summary>
+        public bool CanHopo = true;
+        public override bool IsFullCombo => base.IsFullCombo && Overstrums == 0;
+
         public GuitarStats()
         {
         }
@@ -31,6 +37,7 @@ namespace YARG.Core.Engine.Guitar
             Overstrums = stats.Overstrums;
             HoposStrummed = stats.HoposStrummed;
             GhostInputs = stats.GhostInputs;
+            CanHopo = stats.CanHopo;
         }
 
         public GuitarStats(ref FixedArrayStream stream, int version)
@@ -47,6 +54,7 @@ namespace YARG.Core.Engine.Guitar
             Overstrums = 0;
             HoposStrummed = 0;
             GhostInputs = 0;
+            CanHopo = true;
         }
 
         public override void Serialize(BinaryWriter writer)

@@ -142,7 +142,7 @@ namespace YARG.Core.Game
                 };
             }
 
-            public GuitarEngineParameters Create(float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool isBass, int maxMultiplierBonus = 0, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int baseMultiplierOffset = 1, int speedFreakBonusThreshold = 0, double speedFreakBonusSongLength = 0)
+            public GuitarEngineParameters Create(float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool isBass, int maxMultiplierBonus = 0, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int baseMultiplierOffset = 1, int speedFreakBonusThreshold = 0, double speedFreakBonusSongLength = 0, int streakGuardianMaxShields = 0)
             {
                 var hitWindow = HitWindow.Create();
                 return new GuitarEngineParameters(
@@ -167,7 +167,8 @@ namespace YARG.Core.Game
                     baseMaxMultiplier: isBass ? BASS_MAX_MULTIPLIER : DEFAULT_MAX_MULTIPLIER,
                     baseMultiplierOffset: baseMultiplierOffset,
                     speedFreakBonusThreshold: speedFreakBonusThreshold,
-                    speedFreakBonusSongLength: speedFreakBonusSongLength);
+                    speedFreakBonusSongLength: speedFreakBonusSongLength,
+                    streakGuardianMaxShields: streakGuardianMaxShields);
             }
         }
 
@@ -203,7 +204,7 @@ namespace YARG.Core.Game
                 };
             }
 
-            public DrumsEngineParameters Create(float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, DrumsEngineParameters.DrumMode mode, int maxMultiplierBonus = 0, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int baseMultiplierOffset = 1, int speedFreakBonusThreshold = 0, double speedFreakBonusSongLength = 0)
+            public DrumsEngineParameters Create(float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, DrumsEngineParameters.DrumMode mode, int maxMultiplierBonus = 0, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int baseMultiplierOffset = 1, int speedFreakBonusThreshold = 0, double speedFreakBonusSongLength = 0, int streakGuardianMaxShields = 0)
             {
                 var hitWindow = HitWindow.Create();
                 return new DrumsEngineParameters(
@@ -221,7 +222,8 @@ namespace YARG.Core.Game
                     baseMaxMultiplier: DEFAULT_MAX_MULTIPLIER,
                     baseMultiplierOffset: baseMultiplierOffset,
                     speedFreakBonusThreshold: speedFreakBonusThreshold,
-                    speedFreakBonusSongLength: speedFreakBonusSongLength);
+                    speedFreakBonusSongLength: speedFreakBonusSongLength,
+                    streakGuardianMaxShields: streakGuardianMaxShields);
             }
         }
 
@@ -379,7 +381,7 @@ namespace YARG.Core.Game
                 };
             }
 
-            public KeysEngineParameters Create(float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool isBass, int maxMultiplierBonus = 0, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int baseMultiplierOffset = 1, int speedFreakBonusThreshold = 0, double speedFreakBonusSongLength = 0)
+            public KeysEngineParameters Create(float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool isBass, int maxMultiplierBonus = 0, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int baseMultiplierOffset = 1, int speedFreakBonusThreshold = 0, double speedFreakBonusSongLength = 0, int streakGuardianMaxShields = 0)
             {
                 var hitWindow = HitWindow.Create();
                 return new KeysEngineParameters(
@@ -400,7 +402,8 @@ namespace YARG.Core.Game
                     baseMaxMultiplier: isBass ? BASS_MAX_MULTIPLIER : DEFAULT_MAX_MULTIPLIER,
                     baseMultiplierOffset: baseMultiplierOffset,
                     speedFreakBonusThreshold: speedFreakBonusThreshold,
-                    speedFreakBonusSongLength: speedFreakBonusSongLength);
+                    speedFreakBonusSongLength: speedFreakBonusSongLength,
+                    streakGuardianMaxShields: streakGuardianMaxShields);
             }
         }
     }

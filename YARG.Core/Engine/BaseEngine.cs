@@ -106,6 +106,24 @@ namespace YARG.Core.Engine
         protected EngineTimer StarPowerWhammyTimer;
 
         /// <summary>
+        /// One recharge timer per Streak Guardian shield the player can hold (empty if the power isn't active). Each shield recharges independently, <see cref="STREAK_GUARDIAN_SHIELD_COOLDOWN_SECONDS"/> after it's consumed.
+        /// </summary>
+        protected EngineTimer[] StreakGuardianShieldRechargeTimers = Array.Empty<EngineTimer>();
+
+        // Tunable: seconds a consumed Streak Guardian shield takes to recharge.
+        protected const double STREAK_GUARDIAN_SHIELD_COOLDOWN_SECONDS = 1.0;
+
+        public bool WasLastMissShielded { get; protected set; }
+
+        /// <summary>
+        /// True if the Streak Guardian shield at this slot (0-based; lower index = higher consumption priority) is currently charged and available. Lets the visual layer animate each shield icon from its own real state instead of inferring it from the aggregate shield count.
+        /// </summary>
+        public bool IsStreakGuardianShieldCharged(int slot)
+        {
+            return slot >= StreakGuardianShieldRechargeTimers.Length || !StreakGuardianShieldRechargeTimers[slot].IsActive;
+        }
+
+        /// <summary>
         /// A Star Power Sustain was active in the last update.
         /// </summary>
         protected bool WasSpSustainActive;
@@ -637,12 +655,60 @@ namespace YARG.Core.Engine
                 var gainTicks = (uint) (TicksPerFullSpBar * (BaseParameters.StarPowerGeneratorStreakPercent / 100.0));
                 GainStarPower(gainTicks);
             }
+
+            // Streak Guardian: advance progress toward the bonus-star tier currently being pursued.
+            if (BaseStats.StreakGuardianMaxShields > 0)
+            {
+                BaseStats.StreakGuardianTierProgress++;
+                int tierThreshold = BaseStats.StreakGuardianTierThreshold;
+                if (tierThreshold > 0 && BaseStats.StreakGuardianTierProgress >= tierThreshold)
+                {
+                    BaseStats.StreakGuardianTierProgress = 0;
+                    BaseStats.StreakGuardianTierIndex++;
+                }
+            }
         }
 
         protected void ResetCombo()
         {
+            WasLastMissShielded = false;
             BaseStats.Combo = 0;
+            BaseStats.StreakGuardianTierProgress = 0;
             OnComboReset?.Invoke();
+        }
+
+        protected bool TryConsumeStreakGuardianShield()
+        {
+            if (BaseStats.StreakGuardianShields <= 0)
+            {
+                return false;
+            }
+
+            BaseStats.StreakGuardianShields--;
+
+            // Start the recharge timer in the first slot that isn't already counting down.
+            for (int i = 0; i < StreakGuardianShieldRechargeTimers.Length; i++)
+            {
+                ref var timer = ref StreakGuardianShieldRechargeTimers[i];
+                if (!timer.IsActive)
+                {
+                    timer.Start(CurrentTime);
+                    break;
+                }
+            }
+
+            WasLastMissShielded = true;
+            return true;
+        }
+
+        protected void ResetComboOrConsumeShield()
+        {
+            if (TryConsumeStreakGuardianShield())
+            {
+                return;
+            }
+
+            ResetCombo();
         }
 
         public void AwardUnisonBonus()
