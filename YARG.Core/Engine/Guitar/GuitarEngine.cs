@@ -47,6 +47,14 @@ namespace YARG.Core.Engine.Guitar
 
         protected double FrontEndExpireTime;
 
+        /// <summary>
+        /// When the player last strummed. The overstrum it may become is raised a strum
+        /// leniency later, so <see cref="BaseEngine.CurrentTime"/> is no longer that moment
+        /// by then, and Streak Guardian's pairing needs the moment the player acted. Drums
+        /// and keys raise their overhit inline and need no equivalent.
+        /// </summary>
+        protected double LastStrumTime;
+
         protected GuitarEngine(InstrumentDifficulty<GuitarNote> chart, SyncTrack syncTrack,
             GuitarEngineParameters engineParameters, bool isBot)
             : base(chart, syncTrack, engineParameters, false, isBot)
@@ -103,6 +111,7 @@ namespace YARG.Core.Engine.Guitar
             HopoLeniencyTimer.Reset();
 
             FrontEndExpireTime = 0;
+            LastStrumTime = 0;
 
             ActiveSustains.Clear();
 
@@ -172,9 +181,16 @@ namespace YARG.Core.Engine.Guitar
 
             YargLogger.LogFormatTrace("Overstrummed at {0}", CurrentTime);
 
-            bool willBeShielded = BaseStats.StreakGuardianShields > 0;
+            // Whether sustains survive depends on whether THIS overstrum is absorbed, not
+            // on shields merely being in stock. The stock question let shielded overstrums
+            // keep their sustains without ever spending one. LastStrumTime because the
+            // overstrum arrives a leniency late, and that leniency varies by preset. Asked
+            // without consuming so the side effects below keep their original order.
+            bool willBeAbsorbed = WouldSpuriousInputBeAbsorbed(LastStrumTime);
 
-            if (!willBeShielded)
+            // Sustains survive a shielded overstrum. Holding through a saved mistake is
+            // part of what the shield buys, and matches GH:WoR.
+            if (!willBeAbsorbed)
             {
                 // Break all active sustains
                 for (int i = 0; i < ActiveSustains.Count; i++)
@@ -188,38 +204,32 @@ namespace YARG.Core.Engine.Guitar
                     EngineStats.CommittedScore += (int) Math.Ceiling(finalScore);
                     OnSustainEnd?.Invoke(sustain.Note, CurrentTime, sustain.HasFinishedScoring);
                 }
+            }
 
-                if (NoteIndex < Notes.Count)
+            // The phrase does not survive, shielded or not: the shield protects the streak,
+            // not the star power. Outside the check above on purpose, since every miss path
+            // and quickplay strip here, and a shielded overstrum was the only case that did
+            // not.
+            if (NoteIndex < Notes.Count)
+            {
+                // Don't remove the phrase if the current note being overstrummed is the start of a phrase
+                if (!Notes[NoteIndex].IsStarPowerStart)
                 {
-                    // Don't remove the phrase if the current note being overstrummed is the start of a phrase
-                    if (!Notes[NoteIndex].IsStarPowerStart)
-                    {
-                        StripStarPower(Notes[NoteIndex]);
-                    }
+                    StripStarPower(Notes[NoteIndex]);
                 }
             }
 
-            ResetComboOrConsumeShield(blocksHopo: false);
+            if (!ResetComboOrConsumeShieldForSpuriousInput(LastStrumTime))
+            {
+                // A shielded overstrum leaves hammer-ons alone; a real combo break doesn't.
+                EngineStats.CanHopo = false;
+            }
+
             EngineStats.Overstrums++;
 
             UpdateMultiplier();
 
             OnOverstrum?.Invoke();
-        }
-
-        protected void ResetComboOrConsumeShield(bool blocksHopo)
-        {
-            if (TryConsumeStreakGuardianShield())
-            {
-                if (blocksHopo)
-                {
-                    EngineStats.CanHopo = false;
-                }
-                return;
-            }
-
-            ResetCombo();
-            EngineStats.CanHopo = false;
         }
 
         protected override bool CanSustainHold(GuitarNote note)
@@ -346,7 +356,10 @@ namespace YARG.Core.Engine.Guitar
 
             WasNoteGhosted = false;
 
-            ResetComboOrConsumeShield(blocksHopo: true);
+            ResetComboOrConsumeShieldForMiss(note);
+
+            // A miss blocks hammer-ons either way: even shielded, the note went unhit.
+            EngineStats.CanHopo = false;
 
             UpdateMultiplier();
 

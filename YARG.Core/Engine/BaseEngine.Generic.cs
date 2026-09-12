@@ -549,6 +549,8 @@ namespace YARG.Core.Engine
 
             StarPowerWhammyTimer.Reset();
 
+            ClearShieldPairing();
+
             foreach (var note in Notes)
             {
                 note.ResetNoteState();
@@ -1448,6 +1450,94 @@ namespace YARG.Core.Engine
 
             return true;
         }
+
+        #region Streak Guardian break-event pairing
+
+        // One mistake can surface as two events: a spurious input (overstrum on guitar,
+        // overhit on drums/keys) and the miss of the note it was aimed at. They count as
+        // one, costing one shield, when the input landed inside that note's hit window.
+        // That is asked via IsNoteInWindow, so the rule follows whatever window the active
+        // preset yields instead of carrying a constant of its own.
+        //
+        // Either event can arrive first, so whichever pays leaves a marker the other
+        // claims. Single use: one input absolves one miss and no more.
+
+        private TNoteType? _shieldedMissNote;
+        private double     _shieldedInputTime;
+        private bool       _shieldedInputAvailable;
+
+        private void ClearShieldPairing()
+        {
+            _shieldedMissNote = null;
+            _shieldedInputAvailable = false;
+        }
+
+        /// <summary>
+        /// Whether a spurious input at <paramref name="inputTime"/> would leave the combo
+        /// standing, without consuming anything. Lets a caller keep its own side effects in
+        /// their original order instead of having to decide first.
+        /// </summary>
+        protected bool WouldSpuriousInputBeAbsorbed(double inputTime)
+        {
+            if (_shieldedMissNote is not null && IsNoteInWindow(_shieldedMissNote, out _, inputTime))
+            {
+                return true;
+            }
+
+            return BaseStats.StreakGuardianShields > 0;
+        }
+
+        /// <summary>
+        /// Combo consequences of a spurious input: an overstrum on guitar, an overhit on
+        /// drums and keys. <paramref name="inputTime"/> must be when the player actually
+        /// played, which is not always <see cref="BaseEngine.CurrentTime"/>, since guitar
+        /// raises its overstrum up to a strum leniency later.
+        /// </summary>
+        /// <returns>True if the combo survived, either shielded or already paid for.</returns>
+        protected bool ResetComboOrConsumeShieldForSpuriousInput(double inputTime)
+        {
+            if (_shieldedMissNote is not null && IsNoteInWindow(_shieldedMissNote, out _, inputTime))
+            {
+                _shieldedMissNote = null;
+                return true;
+            }
+
+            if (TryConsumeStreakGuardianShield())
+            {
+                _shieldedInputTime = inputTime;
+                _shieldedInputAvailable = true;
+                return true;
+            }
+
+            ResetCombo();
+            ClearShieldPairing();
+            return false;
+        }
+
+        /// <summary>
+        /// Handles the combo consequences of missing <paramref name="note"/>.
+        /// </summary>
+        /// <returns>True if the combo survived, either shielded or already paid for.</returns>
+        protected bool ResetComboOrConsumeShieldForMiss(TNoteType note)
+        {
+            if (_shieldedInputAvailable && IsNoteInWindow(note, out _, _shieldedInputTime))
+            {
+                _shieldedInputAvailable = false;
+                return true;
+            }
+
+            if (TryConsumeStreakGuardianShield())
+            {
+                _shieldedMissNote = note;
+                return true;
+            }
+
+            ResetCombo();
+            ClearShieldPairing();
+            return false;
+        }
+
+        #endregion
 
         protected double CalculateSustainPoints(ref ActiveSustain<TNoteType> sustain, uint tick)
         {

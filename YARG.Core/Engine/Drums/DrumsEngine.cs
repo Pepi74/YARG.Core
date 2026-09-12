@@ -144,8 +144,8 @@ namespace YARG.Core.Engine.Drums
                     StripStarPower(Notes[NoteIndex]);
                 }
             }
-
-            ResetComboOrConsumeShield();
+            
+            ResetComboOrConsumeShieldForSpuriousInput(CurrentTime);
             EngineStats.RecordOverhit((int?) Action);
 
             UpdateMultiplier();
@@ -444,7 +444,7 @@ namespace YARG.Core.Engine.Drums
                 YargLogger.LogFormatTrace("Kick lane note missed at {0}", CurrentTime);
             }
 
-            ResetComboOrConsumeShield();
+            ResetComboOrConsumeShieldForMiss(note);
 
             UpdateMultiplier();
 

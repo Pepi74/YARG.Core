@@ -702,16 +702,6 @@ namespace YARG.Core.Engine
             return true;
         }
 
-        protected void ResetComboOrConsumeShield()
-        {
-            if (TryConsumeStreakGuardianShield())
-            {
-                return;
-            }
-
-            ResetCombo();
-        }
-
         public void AwardUnisonBonus()
         {
             GainStarPower(TicksPerQuarterSpBar);
