@@ -114,6 +114,8 @@ namespace YARG.Core.Engine.Guitar.Engines
             else if (action is GuitarAction.StrumDown or GuitarAction.StrumUp && gameInput.Button)
             {
                 HasStrummed = true;
+                // Kept for Streak Guardian's break-event pairing; see GuitarEngine.LastStrumTime.
+                LastStrumTime = gameInput.Time;
                 newNoteInput = true;
             }
             else if (IsFretInput(gameInput))

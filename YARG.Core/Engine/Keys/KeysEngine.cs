@@ -157,9 +157,11 @@ namespace YARG.Core.Engine.Keys
 
             YargLogger.LogFormatTrace("Overhit at {0}", CurrentTime);
 
-            bool willBeShielded = BaseStats.StreakGuardianShields > 0;
+            // Sustains survive a shielded overhit, same as guitar. Asked without
+            // consuming so the side effects below keep their original order.
+            bool willBeAbsorbed = WouldSpuriousInputBeAbsorbed(CurrentTime);
 
-            if (!willBeShielded)
+            if (!willBeAbsorbed)
             {
                 // Break all active sustains
                 for (int i = 0; i < ActiveSustains.Count; i++)
@@ -173,19 +175,21 @@ namespace YARG.Core.Engine.Keys
                     EngineStats.CommittedScore += (int) Math.Ceiling(finalScore);
                     OnSustainEnd?.Invoke(sustain.Note, CurrentTime, sustain.HasFinishedScoring);
                 }
-
-                if (NoteIndex < Notes.Count)
-                {
-                    // Don't remove the phrase if the current note being overstrummed is the start of a phrase
-                    if (!Notes[NoteIndex].IsStarPowerStart)
-                    {
-                        StripStarPower(Notes[NoteIndex]);
-                    }
-                }                
             }
 
+            // The phrase does not survive, shielded or not: the shield protects the
+            // streak, not the star power.
+            if (NoteIndex < Notes.Count)
+            {
+                // Don't remove the phrase if the current note being overstrummed is the start of a phrase
+                if (!Notes[NoteIndex].IsStarPowerStart)
+                {
+                    StripStarPower(Notes[NoteIndex]);
+                }
+            }
 
-            ResetComboOrConsumeShield();
+            // CurrentTime is the input time: the overhit is raised inline, like drums.
+            ResetComboOrConsumeShieldForSpuriousInput(CurrentTime);
             EngineStats.Overhits++;
 
             UpdateMultiplier();
