@@ -210,6 +210,39 @@ namespace YARG.Core.Engine
         }
 
         /// <summary>
+        /// Happiness that must spill over per Crowd Hyper bonus star. 0 if the power isn't active; otherwise set once at song start and never changes.
+        /// </summary>
+        public float CrowdHyperOverflowPerStar;
+
+        /// <summary>
+        /// Happiness earned while the rock meter was already at the top, rated off the Normal preset. Never decreases.
+        /// </summary>
+        public float CrowdHyperOverflow;
+
+        /// <summary>
+        /// Bonus stars (0-5) earned from Crowd Hyper. Entirely separate from the score-based star curve. These are added on top, same as <see cref="SpeedFreakBonusStars"/> and <see cref="StreakGuardianBonusStars"/>.
+        /// </summary>
+        public int CrowdHyperBonusStars => CrowdHyperOverflowPerStar <= 0
+            ? 0
+            : Math.Min(5, (int) (CrowdHyperOverflow / CrowdHyperOverflowPerStar));
+
+        /// <summary>
+        /// Progress (0-1) toward the next Crowd Hyper bonus star. Resets each time a star is earned. 0 once all 5 are earned.
+        /// </summary>
+        public float CrowdHyperOverflowProgress
+        {
+            get
+            {
+                if (CrowdHyperOverflowPerStar <= 0 || CrowdHyperBonusStars >= 5)
+                {
+                    return 0f;
+                }
+
+                return CrowdHyperOverflow % CrowdHyperOverflowPerStar / CrowdHyperOverflowPerStar;
+            }
+        }
+
+        /// <summary>
         /// Number of chords in the chart. Defaults to total notes, but some instruments calculate differently.
         /// </summary>
         public int TotalChords;
@@ -363,6 +396,9 @@ namespace YARG.Core.Engine
             StreakGuardianTierProgress = stats.StreakGuardianTierProgress;
             StreakGuardianTierIndex = stats.StreakGuardianTierIndex;
 
+            CrowdHyperOverflowPerStar = stats.CrowdHyperOverflowPerStar;
+            CrowdHyperOverflow = stats.CrowdHyperOverflow;
+
             TotalOffset = stats.TotalOffset;
             AverageOffset = stats.AverageOffset;
             OffsetSamples = new List<double>(stats.OffsetSamples);
@@ -461,6 +497,8 @@ namespace YARG.Core.Engine
             StreakGuardianShields = StreakGuardianMaxShields;
             StreakGuardianTierProgress = 0;
             StreakGuardianTierIndex = 0;
+
+            CrowdHyperOverflow = 0;
 
             StarPowerTickAmount = 0;
             TotalStarPowerTicks = 0;

@@ -177,8 +177,7 @@ namespace YARG.Core.Engine.Keys
                 }
             }
 
-            // The phrase does not survive, shielded or not: the shield protects the
-            // streak, not the star power.
+            // The phrase is stripped even when shielded: the shield protects the streak, not the star power.
             if (NoteIndex < Notes.Count)
             {
                 // Don't remove the phrase if the current note being overstrummed is the start of a phrase

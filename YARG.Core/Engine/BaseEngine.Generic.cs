@@ -188,6 +188,9 @@ namespace YARG.Core.Engine
 
             EngineStats.StreakGuardianMaxShields = EngineParameters.StreakGuardianMaxShields;
             EngineStats.StreakGuardianShields = EngineParameters.StreakGuardianMaxShields;
+            
+            EngineStats.CrowdHyperOverflowPerStar = EngineParameters.CrowdHyperChartFraction * EngineStats.TotalNotes * EngineManager.HAPPINESS_PER_NOTE_HIT / 5;
+
         }
 
         public static int[] PopulateStarScoreThresholds(float[] multiplierThresholds, float[] soloBonusMultiplierThresholds, int baseScore, int soloScore)
@@ -1192,7 +1195,7 @@ namespace YARG.Core.Engine
                 progress = YargMath.InverseLerpF(previousPoints, nextPoints, EngineStats.TotalScore);
             }
 
-            EngineStats.Stars = CurrentStarIndex + progress + EngineStats.SpeedFreakBonusStars + EngineStats.StreakGuardianBonusStars;
+            EngineStats.Stars = CurrentStarIndex + progress + EngineStats.SpeedFreakBonusStars + EngineStats.StreakGuardianBonusStars + EngineStats.CrowdHyperBonusStars;
         }
 
         protected virtual void StripStarPower(TNoteType? note)

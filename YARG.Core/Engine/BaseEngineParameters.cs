@@ -40,11 +40,12 @@ namespace YARG.Core.Engine
         public readonly int SpeedFreakBonusThreshold;
         public readonly double SpeedFreakBonusSongLength;
         public readonly int StreakGuardianMaxShields;
+        public readonly float CrowdHyperChartFraction;
 
         public double SongSpeed;
 
         protected BaseEngineParameters(HitWindowSettings hitWindow, int maxMultiplier, double spWhammyBuffer,
-            double sustainDropLeniency, float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool enableLanes, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int? baseMaxMultiplier = null, int baseMultiplierOffset = 1, int speedFreakBonusThreshold = 0, double speedFreakBonusSongLength = 0, int streakGuardianMaxShields = 0)
+            double sustainDropLeniency, float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool enableLanes, int starPowerMultiplier = 2, int notesPerMultiplierIncrease = 10, int starPowerPhraseGainPercent = 25, int starPowerGeneratorStreakPercent = 0, int? baseMaxMultiplier = null, int baseMultiplierOffset = 1, int speedFreakBonusThreshold = 0, double speedFreakBonusSongLength = 0, int streakGuardianMaxShields = 0, float crowdHyperChartFraction = 0)
         {
             HitWindow = hitWindow;
             StarPowerWhammyBuffer = spWhammyBuffer;
@@ -62,6 +63,7 @@ namespace YARG.Core.Engine
             SpeedFreakBonusThreshold = speedFreakBonusThreshold;
             SpeedFreakBonusSongLength = speedFreakBonusSongLength;
             StreakGuardianMaxShields = streakGuardianMaxShields;
+            CrowdHyperChartFraction = crowdHyperChartFraction;
         }
 
         protected BaseEngineParameters(ref FixedArrayStream stream, int version)
@@ -115,6 +117,7 @@ namespace YARG.Core.Engine
             BaseMultiplierOffset = 1;
             SpeedFreakBonusThreshold = 0;
             BaseMaxMultiplier = MaxMultiplier;
+            CrowdHyperChartFraction = 0;
         }
 
         public virtual void Serialize(BinaryWriter writer)

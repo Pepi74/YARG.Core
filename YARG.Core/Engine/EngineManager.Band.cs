@@ -136,16 +136,18 @@ namespace YARG.Core.Engine
                 progress = YargMath.InverseLerpF(previousPoints, nextPoints, Score);
             }
 
-            // Speed Freak's and Streak Guardian's bonus stars aren't part of Score/StarScoreThresholds, so they're summed separately here, uncapped. Unity applies the Power Challenge / All-Powerful cap afterward.
+            // Speed Freak's, Streak Guardian's and Crowd Hyper's bonus stars aren't part of Score/StarScoreThresholds, so they're summed separately here, uncapped. Unity applies the Power Challenge / All-Powerful cap afterward.
             int speedFreakBonus = 0;
             int streakGuardianBonus = 0;
+            int crowdHyperBonus = 0;
             foreach (var engine in Engines)
             {
                 speedFreakBonus += engine.BaseEngine.BaseStats.SpeedFreakBonusStars;
                 streakGuardianBonus += engine.BaseEngine.BaseStats.StreakGuardianBonusStars;
+                crowdHyperBonus += engine.BaseEngine.BaseStats.CrowdHyperBonusStars;
             }
 
-            Stars = _currentStarIndex + progress + speedFreakBonus + streakGuardianBonus;
+            Stars = _currentStarIndex + progress + speedFreakBonus + streakGuardianBonus + crowdHyperBonus;
         }
 
         public void ResetStars()
