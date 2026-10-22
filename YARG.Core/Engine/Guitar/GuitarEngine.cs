@@ -181,11 +181,9 @@ namespace YARG.Core.Engine.Guitar
 
             YargLogger.LogFormatTrace("Overstrummed at {0}", CurrentTime);
 
-            // Whether sustains survive depends on whether THIS overstrum is absorbed, not
-            // on shields merely being in stock. The stock question let shielded overstrums
-            // keep their sustains without ever spending one. LastStrumTime because the
-            // overstrum arrives a leniency late, and that leniency varies by preset. Asked
-            // without consuming so the side effects below keep their original order.
+            // Sustains depend on whether this overstrum is absorbed, not on shields being in stock. LastStrumTime
+            // because the overstrum arrives a leniency late. Asked without consuming so the side effects below
+            // keep their original order.
             bool willBeAbsorbed = WouldSpuriousInputBeAbsorbed(LastStrumTime);
 
             // Sustains survive a shielded overstrum. Holding through a saved mistake is
@@ -206,10 +204,7 @@ namespace YARG.Core.Engine.Guitar
                 }
             }
 
-            // The phrase does not survive, shielded or not: the shield protects the streak,
-            // not the star power. Outside the check above on purpose, since every miss path
-            // and quickplay strip here, and a shielded overstrum was the only case that did
-            // not.
+            // The phrase is stripped even when shielded: the shield protects the streak, not the star power.
             if (NoteIndex < Notes.Count)
             {
                 // Don't remove the phrase if the current note being overstrummed is the start of a phrase

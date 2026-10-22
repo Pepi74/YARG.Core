@@ -5,6 +5,8 @@ using YARG.Core.Engine.Drums;
 using YARG.Core.Engine.Drums.Engines;
 using YARG.Core.Engine.Guitar;
 using YARG.Core.Engine.Guitar.Engines;
+using YARG.Core.Engine.Keys.Engines;
+using YARG.Core.Game;
 using YARG.Core.Input;
 
 namespace YARG.Core.UnitTests.Engine;
@@ -424,6 +426,300 @@ public class PowerChallengeEngineBehaviorTests : EngineTester
             Assert.That(engine.EngineStats.StreakGuardianShields, Is.Zero, "two mistakes should spend both shields");
             Assert.That(engine.EngineStats.Combo, Is.EqualTo(1), "two mistakes with two shields broke the combo");
         }
+    }
+
+    // Crowd Hyper. The song starts with the meter full, and hits made while it stays there fill an
+    // overflow bar instead of being clamped away. All five bonus stars cost the happiness of a share
+    // of the chart's notes hit at a full meter, so the bar scales with the chart.
+
+    private const float HAPPINESS_PER_HIT = EngineManager.HAPPINESS_PER_NOTE_HIT;
+
+    // Per-star threshold for the BaseStats tests, which set it directly.
+    private const float CROWD_HYPER_OVERFLOW_PER_STAR = 0.5f;
+
+    // Share of the chart handed to the engine, which derives the per-star threshold from it.
+    private const float CROWD_HYPER_CHART_FRACTION = 0.9f;
+
+    [Test]
+    public void CrowdHyperPlus_AwardsOneStarPerOverflowBar()
+    {
+        var stats = new GuitarStats { CrowdHyperOverflowPerStar = CROWD_HYPER_OVERFLOW_PER_STAR };
+
+        using (Assert.EnterMultipleScope())
+        {
+            stats.CrowdHyperOverflow = 0.49f;
+            Assert.That(stats.CrowdHyperBonusStars, Is.Zero);
+
+            stats.CrowdHyperOverflow = 0.5f;
+            Assert.That(stats.CrowdHyperBonusStars, Is.EqualTo(1));
+
+            stats.CrowdHyperOverflow = 2.5f;
+            Assert.That(stats.CrowdHyperBonusStars, Is.EqualTo(5));
+
+            stats.CrowdHyperOverflow = 20f;
+            Assert.That(stats.CrowdHyperBonusStars, Is.EqualTo(5), "bonus stars went past the cap of five");
+        }
+    }
+
+    [Test]
+    public void CrowdHyperPlus_AwardsNothingWhenThePowerIsInactive()
+    {
+        // PerStar is 0 for every player without the power, which must not divide by zero
+        // or hand out stars for overflow that could never have accumulated.
+        var stats = new GuitarStats { CrowdHyperOverflowPerStar = 0f, CrowdHyperOverflow = 20f };
+
+        Assert.That(stats.CrowdHyperBonusStars, Is.Zero);
+    }
+
+    [Test]
+    public void CrowdHyperPlus_StartsTheSongWithTheCrowdMaxed()
+    {
+        var (_, _, withPower) = CreateCrowdHyperSetup(CROWD_HYPER_CHART_FRACTION);
+        var (_, _, without) = CreateCrowdHyperSetup(0f);
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(withPower.Happiness, Is.EqualTo(1f), "the power did not start the crowd maxed");
+            Assert.That(without.Happiness, Is.EqualTo(RockMeterPreset.Normal.StartingHappiness),
+                "a player without the power no longer starts at the preset's happiness");
+        }
+    }
+
+    [Test]
+    public void CrowdHyperPlus_AccumulatesOverflowWhileTheMeterIsMaxed()
+    {
+        var (_, engine, _) = CreateCrowdHyperSetup(CROWD_HYPER_CHART_FRACTION);
+
+        RunWithInputs(engine, endTime: 1.5, HitGreenNotesAt(CrowdHyperNoteTimes));
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(engine.EngineStats.NotesHit, Is.EqualTo(CrowdHyperNoteTimes.Length),
+                "scenario did not hit every note");
+            Assert.That(engine.EngineStats.CrowdHyperOverflow,
+                Is.EqualTo(CrowdHyperNoteTimes.Length * HAPPINESS_PER_HIT).Within(1e-5f));
+        }
+    }
+
+    [Test]
+    public void CrowdHyperPlus_StopsAccumulatingOnceTheMeterDropsBelowMax()
+    {
+        var (_, engine, container) = CreateCrowdHyperSetup(CROWD_HYPER_CHART_FRACTION, missSecondNote: true);
+
+        // The second note is Red while Green is held, so it is missed without an overstrum.
+        // One miss costs four hits' worth of happiness, so the three hits that follow only
+        // climb back partway and none of them may spill.
+        RunWithInputs(engine, endTime: 1.5, HitGreenNotesAt(new[] { 0.5, 0.8, 0.9, 1.0 }));
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(container.Happiness, Is.LessThan(1f), "the meter never actually dropped");
+            Assert.That(engine.EngineStats.CrowdHyperOverflow, Is.EqualTo(HAPPINESS_PER_HIT).Within(1e-5f),
+                "overflow kept accumulating after the meter fell below the top");
+        }
+    }
+
+    [Test]
+    public void CrowdHyperPlus_OverflowRateIgnoresThePlayersRockMeterPreset()
+    {
+        // Casual doubles HitRecoveryMultiplier. The player's meter refills twice as fast,
+        // but the power must ask the same of everyone, so the overflow rate stays put.
+        var (_, engine, _) = CreateCrowdHyperSetup(CROWD_HYPER_CHART_FRACTION, meterPreset: RockMeterPreset.Casual);
+
+        RunWithInputs(engine, endTime: 1.5, HitGreenNotesAt(CrowdHyperNoteTimes));
+
+        Assert.That(engine.EngineStats.CrowdHyperOverflow,
+            Is.EqualTo(CrowdHyperNoteTimes.Length * HAPPINESS_PER_HIT).Within(1e-5f),
+            "the overflow rate followed the player's rock meter preset");
+    }
+
+    [Test]
+    public void CrowdHyperPlus_BonusStarsReachTheBandStarCount()
+    {
+        // The HUD reads the band's star count, which sums bonus stars separately from the
+        // per-engine count. Measured as a difference so score-based stars don't factor in.
+        var (manager, engine, _) = CreateCrowdHyperSetup(CROWD_HYPER_CHART_FRACTION);
+
+        manager.UpdateStars();
+        float before = manager.Stars;
+
+        engine.EngineStats.CrowdHyperOverflow = 2 * engine.EngineStats.CrowdHyperOverflowPerStar;
+        manager.UpdateStars();
+
+        Assert.That(manager.Stars - before, Is.EqualTo(2f).Within(1e-4f),
+            "Crowd Hyper bonus stars never made it into the band's star count");
+    }
+
+    [Test]
+    public void CrowdHyperPlus_ThresholdScalesWithTheChartsNoteCount()
+    {
+        // Same fraction, twice the notes: each bonus star must cost twice the overflow, so the power
+        // asks the same share of any chart instead of a fixed amount that short charts can't reach.
+        float shortChart = CreateGuitarEngineWithNotes(200, CROWD_HYPER_CHART_FRACTION).EngineStats.CrowdHyperOverflowPerStar;
+        float longChart = CreateGuitarEngineWithNotes(400, CROWD_HYPER_CHART_FRACTION).EngineStats.CrowdHyperOverflowPerStar;
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(shortChart, Is.GreaterThan(0f), "the threshold was never computed");
+            Assert.That(longChart, Is.EqualTo(shortChart * 2).Within(1e-6f),
+                "doubling the chart did not double what each bonus star costs");
+        }
+    }
+
+    private static YargFiveFretGuitarEngine CreateGuitarEngineWithNotes(int noteCount, float chartFraction)
+    {
+        var notes = new List<GuitarNote>();
+        for (int i = 0; i < noteCount; i++)
+        {
+            notes.Add(CreateGuitarNote(FiveFretGuitarFret.Green, 0.5 + i * 0.25));
+        }
+
+        for (int i = 1; i < notes.Count; i++)
+        {
+            notes[i].PreviousNote = notes[i - 1];
+            notes[i - 1].NextNote = notes[i];
+        }
+
+        var hitWindow = new HitWindowSettings(0.14, 0.14, 1.0, false, 0, 1.0, 1.0, 0.15, 0.25);
+        var engineParams = new GuitarEngineParameters(hitWindow, 4, 0, 0,
+            StarMultiplierThresholds, SoloBonusStarMultiplierThresholds,
+            hopoLeniency: 0.08, strumLeniency: 0.05, strumLeniencySmall: 0.025,
+            infiniteFrontEnd: false, antiGhosting: true, soloTaps: false,
+            noStarPowerOverlap: false, enableLanes: true,
+            crowdHyperChartFraction: chartFraction);
+
+        var diff = new InstrumentDifficulty<GuitarNote>(Instrument.FiveFretGuitar, Difficulty.Expert, notes, new(), new());
+        var syncTrack = new SyncTrack(SG_RESOLUTION);
+        syncTrack.Tempos.Add(new TempoChange(120, 0, 0));
+
+        return new YargFiveFretGuitarEngine(diff, syncTrack, engineParams, isBot: false);
+    }
+
+    [Test]
+    public void CrowdHyperPlus_PerfectRunWithoutStarPower_EarnsAllFiveStars([Values("guitar", "drums", "keys")] string instrument)
+    {
+        // A clean run on a real chart must fill the bar on every instrument, counting each chord note on drums
+        // and keys. Star Power stays off because the bot fires it whenever it can, and sustained phrase notes
+        // fill the bar even with phrase gain at zero.
+        var chart = GetChart();
+        var manager = new EngineManager();
+
+        BaseEngine engine;
+        double endTime;
+        switch (instrument)
+        {
+            case "guitar":
+            {
+                var notes = chart.FiveFretGuitar.GetDifficulty(Difficulty.Expert);
+                var p = EnginePreset.Default.FiveFretGuitar.Create(StarMultiplierThresholds, SoloBonusStarMultiplierThresholds, false,
+                    starPowerPhraseGainPercent: 0, crowdHyperChartFraction: CROWD_HYPER_CHART_FRACTION);
+                var e = new YargFiveFretGuitarEngine(notes, chart.SyncTrack, p, isBot: true);
+                e.AllowStarPower(false);
+                manager.Register(e, notes, chart, RockMeterPreset.Normal);
+                engine = e; endTime = notes.GetEndTime();
+                break;
+            }
+            case "drums":
+            {
+                var notes = chart.ProDrums.GetDifficulty(Difficulty.Expert);
+                var p = EnginePreset.Default.Drums.Create(StarMultiplierThresholds, SoloBonusStarMultiplierThresholds,
+                    DrumsEngineParameters.DrumMode.ProFourLane,
+                    starPowerPhraseGainPercent: 0, crowdHyperChartFraction: CROWD_HYPER_CHART_FRACTION);
+                var e = new YargDrumsEngine(notes, chart.SyncTrack, p, true, false);
+                e.AllowStarPower(false);
+                manager.Register(e, notes, chart, RockMeterPreset.Normal);
+                engine = e; endTime = notes.GetEndTime();
+                break;
+            }
+            default:
+            {
+                var notes = chart.Keys.GetDifficulty(Difficulty.Expert);
+                var p = EnginePreset.Default.ProKeys.Create(StarMultiplierThresholds, SoloBonusStarMultiplierThresholds, false,
+                    starPowerPhraseGainPercent: 0, crowdHyperChartFraction: CROWD_HYPER_CHART_FRACTION);
+                var e = new YargFiveLaneKeysEngine(notes, chart.SyncTrack, p, isBot: true);
+                e.AllowStarPower(false);
+                manager.Register(e, notes, chart, RockMeterPreset.Normal);
+                engine = e; endTime = notes.GetEndTime();
+                break;
+            }
+        }
+
+        manager.InitializeHappiness(true);
+
+        bool spEverActive = false;
+        for (double t = 0; t <= endTime + 1; t += 0.01)
+        {
+            engine.Update(t);
+            spEverActive |= engine.BaseStats.IsStarPowerActive;
+        }
+
+        var s = engine.BaseStats;
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(spEverActive, Is.False, "Star Power activated, so the run doesn't measure the base rate");
+            Assert.That(s.NotesHit, Is.EqualTo(s.TotalNotes), "the bot did not hit every note");
+            Assert.That(s.CrowdHyperOverflow / HAPPINESS_PER_HIT, Is.EqualTo(s.TotalNotes).Within(0.5),
+                "some hit notes never reached the overflow bar");
+            Assert.That(s.CrowdHyperBonusStars, Is.EqualTo(5),
+                "a perfect run without Star Power did not earn all five bonus stars");
+        }
+    }
+
+    private static readonly double[] CrowdHyperNoteTimes = { 0.5, 0.6, 0.7, 0.8, 0.9 };
+
+    // Holds Green for the whole run and strums on each note time, alternating strum
+    // direction so every strum registers as its own press.
+    private static List<GameInput> HitGreenNotesAt(double[] times)
+    {
+        var inputs = new List<GameInput> { GameInput.Create(times[0] - 0.05, GuitarAction.GreenFret, true) };
+        for (int i = 0; i < times.Length; i++)
+        {
+            var strum = i % 2 == 0 ? GuitarAction.StrumDown : GuitarAction.StrumUp;
+            inputs.Add(GameInput.Create(times[i], strum, true));
+        }
+
+        return inputs;
+    }
+
+    private static (EngineManager Manager, YargFiveFretGuitarEngine Engine, EngineManager.EngineContainer Container)
+        CreateCrowdHyperSetup(float chartFraction, RockMeterPreset? meterPreset = null, bool missSecondNote = false)
+    {
+        var notes = new List<GuitarNote>();
+        foreach (var time in CrowdHyperNoteTimes)
+        {
+            // The second note becomes Red when the scenario wants it missed: Green stays
+            // held throughout, so it cannot be hit and no strum is aimed at it.
+            bool makeUnhittable = missSecondNote && notes.Count == 1;
+            notes.Add(CreateGuitarNote(makeUnhittable ? FiveFretGuitarFret.Red : FiveFretGuitarFret.Green, time));
+        }
+
+        for (int i = 1; i < notes.Count; i++)
+        {
+            notes[i].PreviousNote = notes[i - 1];
+            notes[i - 1].NextNote = notes[i];
+        }
+
+        var hitWindow = new HitWindowSettings(0.14, 0.14, 1.0, false, 0, 1.0, 1.0, 0.15, 0.25);
+        var engineParams = new GuitarEngineParameters(hitWindow, 4, 0, 0,
+            StarMultiplierThresholds, SoloBonusStarMultiplierThresholds,
+            hopoLeniency: 0.08, strumLeniency: 0.05, strumLeniencySmall: 0.025,
+            infiniteFrontEnd: false, antiGhosting: true, soloTaps: false,
+            noStarPowerOverlap: false, enableLanes: true,
+            crowdHyperChartFraction: chartFraction);
+
+        var diff = new InstrumentDifficulty<GuitarNote>(Instrument.FiveFretGuitar, Difficulty.Expert,
+            notes, new(), new());
+
+        var chart = new SongChart(SG_RESOLUTION);
+        chart.SyncTrack.Tempos.Add(new TempoChange(120, 0, 0));
+
+        var engine = new YargFiveFretGuitarEngine(diff, chart.SyncTrack, engineParams, isBot: false);
+
+        var manager = new EngineManager();
+        var container = manager.Register(engine, diff, chart, meterPreset ?? RockMeterPreset.Normal);
+        manager.InitializeHappiness(false);
+
+        return (manager, engine, container);
     }
 
     // Guards against a scenario passing vacuously: the overstrum and the miss whose

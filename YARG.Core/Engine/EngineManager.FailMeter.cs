@@ -15,7 +15,7 @@ namespace YARG.Core.Engine
         /// <summary>
         /// The amount of happiness lost if a single note/gem for non-vocal players is hit.
         /// </summary>
-        private const float HAPPINESS_PER_NOTE_HIT          = HAPPINESS_PER_NOTE_MISS / 4;
+        internal const float HAPPINESS_PER_NOTE_HIT         = HAPPINESS_PER_NOTE_MISS / 4;
 
         /// <summary>
         /// The amount of happiness lost if a single note/gem for non-vocal players is completely missed.
@@ -245,7 +245,11 @@ namespace YARG.Core.Engine
             public void ResetHappiness()
             {
                 ThisPlayerFailed = false;
-                Happiness = RockMeterPreset.StartingHappiness;
+                // Crowd Hyper starts the player with the crowd already maxed out, whatever
+                // the preset's starting happiness would have been.
+                Happiness = BaseEngine.BaseParameters.CrowdHyperChartFraction > 0
+                    ? 1f
+                    : RockMeterPreset.StartingHappiness;
             }
 
             protected void OnVocalPhraseHit(double hitPercentAfterParams, bool fullPoints, bool isLastPhrase)
@@ -346,6 +350,21 @@ namespace YARG.Core.Engine
             }
             private void OnNoteHit(int index, TNoteType note)
             {
+                // Crowd Hyper: hits while the meter is at the top fill the overflow bar. Rated off the Normal
+                // preset so the power asks the same of everyone; reaching the top still depends on their own.
+                // Runs before the chord check below so every note of a chord counts on drums and keys.
+                if (Engine.BaseStats.CrowdHyperOverflowPerStar > 0 && Happiness >= 1f)
+                {
+                    var defaultMeter = Game.RockMeterPreset.Normal;
+                    float overflow = HAPPINESS_PER_NOTE_HIT * defaultMeter.HitRecoveryMultiplier;
+                    if (EngineManager.IsAnyStarpowerActive)
+                    {
+                        overflow *= defaultMeter.StarPowerEffectMultiplier;
+                    }
+
+                    Engine.BaseStats.CrowdHyperOverflow += overflow;
+                }
+
                 // Ignore any notes that have not been fully hit yet on the assumption that a call
                 // where the note group was fully hit will eventually come if they are all hit
                 if (!note.WasFullyHit())
