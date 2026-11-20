@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using YARG.Core.Chart;
@@ -181,7 +181,8 @@ namespace YARG.Core.Engine
         /// </summary>
         public int StreakGuardianTierIndex;
 
-        // Tunable: each tier's required streak length is TotalNotes/10, scaled by one of these fractions, in order (stars 1-5).
+        // Tunable: each tier's required streak length is TotalChords/10, scaled by one of these fractions, in order (stars 1-5).
+        // TotalChords is the longest combo the chart allows, which on keys counts each chord once.
         private static readonly float[] STREAK_GUARDIAN_TIER_FRACTIONS = { 0.8f, 0.9f, 1.0f, 1.1f, 1.2f };
 
         /// <summary>
@@ -190,7 +191,7 @@ namespace YARG.Core.Engine
         public int StreakGuardianTierThreshold =>
             StreakGuardianTierIndex >= STREAK_GUARDIAN_TIER_FRACTIONS.Length
                 ? 0
-                : Math.Max(1, (int) Math.Round(TotalNotes / 10f * STREAK_GUARDIAN_TIER_FRACTIONS[StreakGuardianTierIndex]));
+                : Math.Max(1, (int) Math.Round(TotalChords / 10f * STREAK_GUARDIAN_TIER_FRACTIONS[StreakGuardianTierIndex]));
 
         /// <summary>
         /// Bonus stars (0-5) earned from Streak Guardian. Entirely separate from the score-based star curve. These are added on top, not derived from StarMultiplierThresholds, same as <see cref="SpeedFreakBonusStars"/>.

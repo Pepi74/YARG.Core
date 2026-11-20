@@ -5,6 +5,7 @@ using YARG.Core.Engine.Drums;
 using YARG.Core.Engine.Drums.Engines;
 using YARG.Core.Engine.Guitar;
 using YARG.Core.Engine.Guitar.Engines;
+using YARG.Core.Engine.Keys;
 using YARG.Core.Engine.Keys.Engines;
 using YARG.Core.Game;
 using YARG.Core.Input;
@@ -329,6 +330,54 @@ public class PowerChallengeEngineBehaviorTests : EngineTester
 
     private static DrumNote CreateDrumNote(FourLaneDrumPad pad, double time) =>
         new(pad, DrumNoteType.Neutral, DrumNoteFlags.None, NoteFlags.None, time, SgTickOf(time));
+
+    [Test]
+    public void StreakGuardianPlus_KeysChords_TiersScaleWithChordsNotNotes()
+    {
+        // Keys count every note of a chord toward TotalNotes but raise the combo once per chord. Scaled to the
+        // 60 notes, the tiers would need a 30 combo out of 20 chords; scaled to the chords, a clean run earns all 5.
+        const int CHORD_COUNT = 20;
+        const double CHORD_SPACING = 0.25;
+
+        var chords = new List<GuitarNote>();
+        for (int i = 0; i < CHORD_COUNT; i++)
+        {
+            double time = SG_LEAD_NOTE_TIME + i * CHORD_SPACING;
+            var chord = CreateGuitarNote(FiveFretGuitarFret.Green, time);
+            chord.AddChildNote(CreateGuitarNote(FiveFretGuitarFret.Red, time));
+            chord.AddChildNote(CreateGuitarNote(FiveFretGuitarFret.Yellow, time));
+            chords.Add(chord);
+        }
+
+        for (int i = 1; i < chords.Count; i++)
+        {
+            chords[i].PreviousNote = chords[i - 1];
+            chords[i - 1].NextNote = chords[i];
+        }
+
+        var engineParams = new KeysEngineParameters(CreateHitWindowSettings(), 4, 0, 0,
+            StarMultiplierThresholds, SoloBonusStarMultiplierThresholds, chordStaggerWindow: 0.05, fatFingerWindow: 0,
+            noStarPowerOverlap: false, enableLanes: true, streakGuardianMaxShields: 2);
+        var diff = new InstrumentDifficulty<GuitarNote>(Instrument.Keys, Difficulty.Expert, chords, new(), new());
+
+        var syncTrack = new SyncTrack(SG_RESOLUTION);
+        syncTrack.Tempos.Add(new TempoChange(120, 0, 0));
+
+        var engine = new YargFiveLaneKeysEngine(diff, syncTrack, engineParams, isBot: true);
+        for (double t = 0; t <= SG_LEAD_NOTE_TIME + CHORD_COUNT * CHORD_SPACING + 1; t += 0.01)
+        {
+            engine.Update(t);
+        }
+
+        var s = engine.EngineStats;
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(s.TotalNotes, Is.EqualTo(CHORD_COUNT * 3), "each chord note should count toward TotalNotes");
+            Assert.That(s.MaxCombo, Is.EqualTo(CHORD_COUNT), "the bot did not hit every chord");
+            Assert.That(s.StreakGuardianBonusStars, Is.EqualTo(5),
+                "a full streak of chords did not earn all five bonus stars");
+        }
+    }
 
     [Test]
     public void StreakGuardianPlus_ShieldedOverstrum_StillBreaksTheStarPowerPhrase([Values(0, 2)] int shields)
